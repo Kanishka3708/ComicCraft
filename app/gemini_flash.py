@@ -16,6 +16,14 @@ Theme: {req.theme}
 Tone: {req.tone}
 Art style: {req.custom_art_style or req.art_style}
 Colour style: {req.custom_colour_style or req.colour_style}
+Target audience: {req.target_audience}
+Language: {req.language}
+Orientation: {req.orientation}
+Character visual style: {req.character_visual_style}
+Background style: {req.background_style}
+Lighting and mood: {req.lighting_mood}
+Panel planning mode: {req.panel_mode}
+Manual panel details: {req.panel_details if req.panel_mode == 'manual' else 'Create the panel breakdown automatically.'}
 Premise: {req.premise}'''
     response=client.models.generate_content(model=Config.TEXT_MODEL,contents=prompt,config=types.GenerateContentConfig(temperature=0.9,response_mime_type='application/json',response_schema=ComicStory))
     if not response.text: raise RuntimeError('Gemini returned an empty response.')

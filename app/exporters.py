@@ -10,14 +10,14 @@ def export_pdf(story,assets,root):
     for i,panel in enumerate(story.panels):
         c.setFont('Helvetica-Bold',20); c.drawString(42,h-45,f'Panel {i+1}: {panel.title}')
         asset=assets[i] if i<len(assets) else ''
-        if asset.endswith('.png'):
-            path=Path(root)/asset.split('/generated/')[-1]
-            if path.exists():
-                with Image.open(path) as im:
-                    iw,ih=im.size; scale=min((w-84)/iw,330/ih); nw,nh=iw*scale,ih*scale
-                    c.drawImage(ImageReader(im),42+(w-84-nw)/2,300,width=nw,height=nh,mask='auto')
-        else:
-            c.setFont('Helvetica',10); c.drawString(42,h-75,'Demo SVG artwork is shown in the web app.')
+        if not isinstance(asset,str) or not asset.lower().endswith(('.png','.jpg','.jpeg')):
+            raise ValueError(f'Panel {i+1} image is missing.')
+        path=Path(root)/asset.split('/generated/')[-1]
+        if not path.exists():
+            raise ValueError(f'Panel {i+1} image file is missing.')
+        with Image.open(path) as im:
+            iw,ih=im.size; scale=min((w-84)/iw,330/ih); nw,nh=iw*scale,ih*scale
+            c.drawImage(ImageReader(im),42+(w-84-nw)/2,300,width=nw,height=nh,mask='auto')
         y=260
         for label,text in [('Caption',panel.caption),('Narration',panel.narration),('Dialogue',f'{story.character}: "{panel.dialogue}"')]:
             c.setFont('Helvetica-Bold',11); c.drawString(42,y,label); c.setFont('Helvetica',10); c.drawString(42,y-16,text[:130]); y-=45

@@ -26,11 +26,11 @@ def demo_story(req):
         panels.append(ComicPanel(title=title,scene=scene,caption=f'{title}: {scene}',narration=f'{req.character or "The hero"} follows the thread of the story through {setting}, guided by {req.premise or req.story_description or "a strange new discovery"}.',dialogue=dialogue,characters=character_names,actions=scene,background=setting,emotion=req.tone,camera_angle='Cinematic medium shot'))
     return ComicStory(title=req.story_title or f'{(req.character or "Untitled").title()}\'s {req.genre} Comic',character=req.character or (character_names[0] if character_names else 'Hero'),setting=setting,tone=req.tone,art_style=req.custom_art_style or req.art_style,colour_style=req.custom_colour_style or req.colour_style,theme=req.theme,characters=profiles,panels=panels)
 
-def generate_comic(req):
+def generate_comic(req,progress_callback=None):
     story=None; source='demo'
     if current_app.config['USE_GEMINI'] and current_app.config['GEMINI_API_KEY']:
         try: story=live_generate(req); source='gemini'
         except Exception: story=None
     if story is None: story=demo_story(req)
-    assets=build_assets(story,Path(current_app.root_path)/'static'/'generated')
+    assets=build_assets(story,Path(current_app.root_path)/'static'/'generated',progress_callback)
     return story,assets,source

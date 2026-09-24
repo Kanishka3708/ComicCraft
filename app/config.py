@@ -8,4 +8,7 @@ class Config:
     IMAGE_MODEL=os.getenv('IMAGE_MODEL','gemini-3.1-flash-image')
     USE_GEMINI=os.getenv('USE_GEMINI','1').strip().lower() in ('1','true','yes')
     MAX_PANELS=int(os.getenv('MAX_PANELS','5'))
+    IMAGE_MAX_RETRIES=int(os.getenv('IMAGE_MAX_RETRIES','3'))
+    IMAGE_BACKOFF_SECONDS=float(os.getenv('IMAGE_BACKOFF_SECONDS','5'))
+    IMAGE_MAX_BACKOFF_SECONDS=float(os.getenv('IMAGE_MAX_BACKOFF_SECONDS','120'))
     DEMO_MODE=not USE_GEMINI or not bool(GEMINI_API_KEY)

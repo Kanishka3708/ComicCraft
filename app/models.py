@@ -51,7 +51,7 @@ class GenerateRequest(BaseModel):
     story_description:str=''
     genre:str='Adventure'
     panel_count:int=Field(default=5,ge=1,le=9)
-    character:str='kanishka'
+    character:str=''
     setting:str='college library'
     custom_setting:str=''
     tone:str='Adventure'
@@ -62,6 +62,14 @@ class GenerateRequest(BaseModel):
     custom_colour_style:str=''
     premise:str='A mysterious discovery begins an unexpected adventure.'
     characters:List[CharacterProfile]=Field(default_factory=list)
+    target_audience:str='General audience'
+    language:str='English'
+    orientation:str='Portrait'
+    character_visual_style:str='Consistent cinematic character design'
+    background_style:str='Detailed environment'
+    lighting_mood:str='Cinematic'
+    panel_mode:str='ai'
+    panel_details:List[dict]=Field(default_factory=list)
 
     @field_validator('panel_count')
     @classmethod
