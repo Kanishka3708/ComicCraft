@@ -1,560 +1,85 @@
 # ComicCraft — AI Comic Story Generator
 
-ComicCraft is an AI-powered comic story generation application that transforms a simple story idea into a structured multi-panel comic.
-
-The application uses Flask for the web application and integrates Gemini-based AI capabilities for structured story generation and optional image generation. It also supports demo mode when an API key is not available.
-
----
-
 ## 📖 Project Overview
 
-ComicCraft allows users to create comic stories by providing story details such as:
-
-* Character
-* Setting
-* Tone
-* Art style
-* Genre
-* Character visual style
-* Background style
-* Lighting / mood
-* Page orientation
-* Visual style
-* Color treatment
-
-The system generates a structured five-panel comic story and renders the panels into a complete comic layout.
-
-The sample story defined in the project documentation contains:
-
-* **Character:** Kanishka
-* **Setting:** College Library
-* **Tone:** Adventure
-* **Art Style:** Modern Comic Book
-
-### Sample Panels
-
-1. A New Beginning
-2. The Strange Discovery
-3. The Challenge
-4. The Turning Point
-5. A New Chapter
-
----
-
-## 🎯 Objectives
-
-The main objectives of ComicCraft are:
-
-* To generate comic stories using Artificial Intelligence.
-* To convert user ideas into structured comic panels.
-* To provide customizable comic creation options.
-* To integrate Generative AI into a practical web application.
-* To provide a simple and user-friendly comic creation workflow.
-* To export generated comics as PDF and JSON files.
-* To provide a demo mode for testing without an API key.
-
----
-
-## ✨ Features
-
-### 🤖 AI Story Generation
-
-Generates structured comic stories using Gemini-based AI.
-
-### 🎨 Comic Customization
-
-Users can customize:
-
-* Visual style
-* Color treatment
-* Page orientation
-* Character visual style
-* Background style
-* Lighting / mood
-* Genre
-* Story details
-
-### 🖼️ Image Generation
-
-The application supports optional AI-powered image generation when the required API configuration is available.
-
-### 📚 Five-Panel Comic
-
-Generates a structured five-panel comic story.
-
-### 📄 PDF Export
-
-Generated comics can be exported as PDF.
-
-### 📦 JSON Download
-
-Generated story data can also be downloaded in JSON format.
-
-### 🧪 Demo Mode
-
-The application can run without an API key using demo/fallback functionality.
-
-### ❤️ Health Endpoint
-
-The application provides a health endpoint for checking application status.
-
-### 🔁 Error Handling
-
-If an image provider is unavailable, the application handles the failure instead of displaying an empty comic panel.
-
-### 🧪 Testing
-
-The project includes pytest-based tests.
-
----
-
-## 🛠️ Technologies Used
-
-| Technology              | Purpose                      |
-| ----------------------- | ---------------------------- |
-| Python                  | Core programming language    |
-| Flask                   | Web application backend      |
-| HTML                    | Frontend structure           |
-| CSS                     | User interface styling       |
-| JavaScript              | Frontend interactions        |
-| Gemini API              | AI story generation          |
-| Gemini Image Generation | Optional AI image generation |
-| ReportLab               | PDF generation               |
-| JSON                    | Structured story data        |
-| Pytest                  | Application testing          |
-| SVG                     | Fallback comic artwork       |
-
----
-
-## 🤖 AI Integration
-
-ComicCraft uses Gemini-based AI capabilities to generate structured comic story content.
-
-The AI can generate:
-
-* Story titles
-* Panel titles
-* Panel descriptions
-* Dialogue
-* Narration
-* Character information
-* Story progression
-
-The application keeps AI model names configurable through environment variables so that models can be changed without modifying the main application code.
-
----
+ComicCraft is an AI-powered web application that generates creative comic stories from user-provided ideas.
+It uses Generative AI to create structured comic story content and multiple panels.
+Users can customize the genre, visual style, characters, background, lighting, and other comic settings.
+The generated comic can be rendered and exported in PDF and JSON formats.
+The project demonstrates the practical use of AI, web development, and creative content generation.
 
 ## 👥 Team Members
 
-| Name         | Role               | Responsibility                                               |
-| ------------ | ------------------ | ------------------------------------------------------------ |
-| **Kanishka** | **Team Leader**    | Project coordination, integration, testing and documentation |
-| **Member 2** | Frontend Developer | User interface and comic creation page                       |
-| **Member 3** | Backend Developer  | Flask backend, routes and application logic                  |
-| **Member 4** | AI Developer       | Gemini integration and AI story generation                   |
-
-> Replace **Member 2, Member 3 and Member 4** with the actual team members' names and update their responsibilities according to the work they completed.
-
----
-
-## 📂 Project Structure
-
-```text
-ComicCraft/
-│
-├── app/
-│   ├── __init__.py
-│   ├── main.py
-│   ├── routes.py
-│   ├── models.py
-│   ├── config.py
-│   ├── gemini_flash.py
-│   ├── gemini_pro.py
-│   ├── image_generator.py
-│   ├── layout_builder.py
-│   └── exporters.py
-│
-├── templates/
-│   └── ...
-│
-├── static/
-│   ├── css/
-│   ├── js/
-│   └── ...
-│
-├── tests/
-│   └── ...
-│
-├── .env.example
-├── requirements.txt
-├── run.py
-└── README.md
-```
-
----
-
-## ⚙️ Requirements
-
-Before running ComicCraft, install:
-
-* Python 3.11 or compatible Python version
-* VS Code
-* pip
-* Git (optional for version control)
-* Gemini API key for AI features
-
-The application can also be run in demo mode without a Gemini API key.
-
----
-
-## 🚀 Installation
-
-### 1. Clone or Download the Project
-
-Download the project or clone the GitHub repository.
-
-```bash
-git clone YOUR_GITHUB_REPOSITORY_URL
-```
-
-Then open the project folder:
-
-```bash
-cd ComicCraft
-```
-
-### 2. Create Virtual Environment
-
-#### Windows
-
-```bash
-py -3.11 -m venv .venv
-```
-
-Activate it:
-
-```bash
-.venv\Scripts\activate
-```
-
-#### macOS / Linux
-
-```bash
-python3 -m venv .venv
-```
-
-Activate it:
-
-```bash
-source .venv/bin/activate
-```
-
-### 3. Install Dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
-### 4. Configure Environment Variables
-
-Copy:
-
-```text
-.env.example
-```
-
-to:
-
-```text
-.env
-```
-
-Add the required API configuration.
-
-Example:
-
-```env
-GEMINI_API_KEY=your_api_key_here
-USE_GEMINI=1
-```
-
-The application can be used in demo mode when the API key is not provided.
-
----
-
-## ▶️ How to Run
-
-Open the VS Code terminal inside the ComicCraft project folder.
-
-### Windows
-
-```bash
-.venv\Scripts\activate
-python run.py
-```
-
-The application will normally be available at:
-
-```text
-http://127.0.0.1:5000
-```
-
-Open the address in a web browser.
-
----
-
-## 🔄 Application Workflow
-
-```text
-User
-  ↓
-Enter Comic Story Details
-  ↓
-Select Visual & Story Options
-  ↓
-Submit Comic Request
-  ↓
-AI Story Generation
-  ↓
-Generate Structured Panels
-  ↓
-Generate / Render Panel Artwork
-  ↓
-Build Comic Layout
-  ↓
-Display Comic
-  ↓
-Download PDF / JSON
-```
-
----
-
-## 🖥️ Main Application Flow
-
-### Step 1 — Create Comic
-
-The user opens the comic creation page and enters the required story information.
-
-### Step 2 — Customize Comic
-
-The user can select options such as:
-
-* Genre
-* Visual style
-* Color treatment
-* Character visual style
-* Background style
-* Lighting / mood
-* Page orientation
-
-### Step 3 — Generate Story
-
-The application sends the structured request to the AI layer.
-
-### Step 4 — Generate Panels
-
-The generated story is divided into multiple comic panels.
-
-### Step 5 — Render Comic
-
-The panel content and artwork are arranged into the final comic layout.
-
-### Step 6 — Export
-
-The completed comic can be downloaded as:
-
-* PDF
-* JSON
-
----
-
-## 🖼️ Screenshots
-
-Add screenshots of the application here.
-
-### Home Page
-
-```text
-[Add Home Page Screenshot]
-```
-
-### Comic Creation Page
-
-```text
-[Add Create Comic Screenshot]
-```
-
-### Generated Comic
-
-```text
-[Add Generated Comic Screenshot]
-```
-
-### PDF Output
-
-```text
-[Add PDF Screenshot]
-```
-
----
-
-## 📄 Output
-
-ComicCraft generates a structured comic containing multiple panels.
-
-Each panel can contain:
-
-* Panel title
-* Scene description
-* Character information
-* Dialogue
-* Narration
-* Artwork
-
-The final comic can be exported as a PDF.
-
-The generated story data can also be downloaded as JSON.
-
----
-
-## 🧪 Testing
-
-The project uses pytest for testing.
-
-Run:
-
-```bash
-pytest -q
-```
-
-This verifies the available application tests.
-
----
-
-## 🔑 Environment Variables
-
-The project uses environment variables for API configuration.
-
-Common configuration values include:
-
-```env
-GEMINI_API_KEY=
-USE_GEMINI=1
-IMAGE_API_KEY=
-IMAGE_API_URL=
-```
-
-API keys should not be directly written into source code.
-
-Do not upload the `.env` file containing a private API key to GitHub.
-
-Use:
-
-```text
-.env.example
-```
-
-for sharing configuration structure.
-
----
-
-## 🖼️ Image Generation
-
-Image generation is provider-backed when the required image API configuration is available.
-
-The application can use:
-
-```text
-IMAGE_API_KEY
-```
-
-or:
-
-```text
-GEMINI_API_KEY
-```
-
-along with:
-
-```env
-USE_GEMINI=1
-```
-
-An optional:
-
-```env
-IMAGE_API_URL=
-```
-
-can be configured for a compatible image endpoint.
-
-If the configured image provider is unavailable, ComicCraft uses fallback artwork so that the comic generation workflow remains functional.
-
----
-
-## 📴 Demo Mode
-
-ComicCraft supports demo mode when an API key is not available.
-
-This makes it possible to:
-
-* Test the application locally
-* Demonstrate the user interface
-* Test comic generation flow
-* Test PDF/JSON export
-* Develop without continuously using an external API
-
----
-
-## ⚠️ Limitations
-
-* AI-generated content depends on the configured AI provider.
-* Image generation requires a compatible configured provider.
-* API availability and quotas can affect AI generation.
-* The exact image generation output can vary between requests.
-* Demo mode does not provide the same AI-generated output as live API mode.
-* Deployment and authentication are not included in the current implementation.
-
----
+| Name           | Role               | Responsibility                                               |
+| -------------- | ------------------ | ------------------------------------------------------------ |
+| **Kanishka**   | **Team Leader**    | Project coordination, integration, testing and documentation |
+| **Jayapriya**  | Frontend Developer | User interface and comic creation page                       |
+| **Kamali Sri** | Backend Developer  | Flask backend, routes and application logic                  |
+| **Gayathri**   | AI Developer       | Gemini integration and AI story generation                   |
+| **Farzana**    | [Role]             | [Responsibility]                                             |
+
+## ✨ Features
+
+* AI-powered comic story generation
+* Five-panel comic story creation
+* Customizable comic settings
+* Multiple genres and visual styles
+* Character and background customization
+* Lighting and mood customization
+* Gemini AI integration
+* Optional AI image generation
+* PDF export
+* JSON download
+* Demo mode without API key
+* Fallback artwork when image generation is unavailable
+* Flask-based web interface
+* Application testing with Pytest
+
+## 🛠️ Technologies Used
+
+| Technology              | Purpose                     |
+| ----------------------- | --------------------------- |
+| Python                  | Core programming language   |
+| Flask                   | Web application development |
+| HTML                    | Frontend structure          |
+| CSS                     | User interface styling      |
+| JavaScript              | Frontend interactions       |
+| Gemini API              | AI story generation         |
+| Gemini Image Generation | AI image generation         |
+| ReportLab               | PDF generation              |
+| JSON                    | Structured story data       |
+| Pytest                  | Application testing         |
+| SVG                     | Fallback artwork            |
 
 ## 🔮 Future Enhancements
 
-Possible future improvements include:
-
-* User authentication
-* User accounts and saved comics
-* Cloud deployment
+* User authentication and accounts
 * Database integration
-* More comic panel layouts
-* More AI image generation providers
+* Cloud deployment
+* More comic layouts and panel styles
 * Character memory across panels
 * Multi-language comic generation
 * Comic sharing through public links
+* More AI image generation options
 * Mobile-responsive improvements
-* More advanced editing tools
+* Advanced comic editing tools
 * Additional export formats
 * Cloud storage for generated comics
 
----
-
 ## 📌 Project Status
 
-**Status:** Active Development
+**Status: Active Development**
 
-ComicCraft currently provides a Flask-based AI comic generation workflow with structured story generation, comic rendering, export functionality and demo/fallback support.
-
----
+ComicCraft is an academic project that provides an AI-powered comic story generation workflow with customizable comic creation, AI integration, rendering, and export functionality.
 
 ## 📜 License
 
 This project is developed for educational and academic purposes.
 
----
-
 ## 👩‍💻 Developed By
 
 **ComicCraft Team**
 
-AI Comic Story Generator
-B.Sc. Computer Science with Data Science
-Academic Project
+**B.Sc. Computer Science with Data Science**
+**Academic Project**
+**Thiruthangal Nadar College**
