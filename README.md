@@ -16,7 +16,7 @@ The project demonstrates the practical use of AI, web development, and creative 
 | **Jayapriya**  | Frontend Developer | User interface and comic creation page                       |
 | **Kamali Sri** | Backend Developer  | Flask backend, routes and application logic                  |
 | **Gayathri**   | AI Developer       | Gemini integration and AI story generation                   |
-| **Farzana**    | [Role]             | [Responsibility]                                             |
+| **Farzana** | Export & Testing Developer | PDF/JSON export, application testing and output validation |                                            |
 
 ## ✨ Features
 
