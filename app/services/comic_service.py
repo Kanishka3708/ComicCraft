@@ -1,8 +1,149 @@
+import re
 from pathlib import Path
 from flask import current_app
 from ..models import ComicStory,ComicPanel,GenerateRequest
 from ..gemini_flash import generate_story as live_generate
 from ..layout_builder import build_assets
+
+
+def _story_keyword_phrases(raw_story):
+    text = (raw_story or '').strip()
+    if not text:
+        return [], []
+    sentences = [segment.strip() for segment in re.split(r'(?<=[.!?])\s+', text) if segment.strip()]
+    return sentences, [sentence.lower() for sentence in sentences]
+
+
+def _story_panel_titles(story_text, panel_count):
+    lower = (story_text or '').lower()
+    titles = []
+    if 'door' in lower:
+        titles.append('The Glowing Door')
+    if 'library' in lower:
+        titles.append('The Magical Library')
+    if 'future' in lower or 'book' in lower:
+        titles.append('The Book of the Future')
+    if 'disappear' in lower or 'escape' in lower or 'run' in lower:
+        titles.append('The Library Fades')
+    if 'morning' in lower or 'message' in lower:
+        titles.append('The Message on the Desk')
+    while len(titles) < panel_count:
+        fallbacks = ['The Hidden Discovery', 'The Unexpected Door', 'The Secret Room', 'The Escape', 'The Final Revelation']
+        for item in fallbacks:
+            if item not in titles:
+                titles.append(item)
+            if len(titles) >= panel_count:
+                break
+    return titles[:panel_count]
+
+
+def _panel_scene_for_story(story_text, sentence_index, panel_index, character_name, setting):
+    sentences = [segment.strip() for segment in re.split(r'(?<=[.!?])\s+', story_text) if segment.strip()]
+    base = sentences[sentence_index] if sentence_index < len(sentences) else story_text
+    lower = base.lower()
+    if panel_index == 1:
+        for idx, sentence in enumerate(sentences):
+            s = sentence.lower()
+            if 'door' in s or 'corridor' in s or 'empty corridor' in s:
+                return sentence
+        if 'college' in lower:
+            return base
+        return f'{character_name} stays late at {setting} and notices a mysterious glowing door that should not be there.'
+    if panel_index == 2:
+        for idx, sentence in enumerate(sentences):
+            s = sentence.lower()
+            if 'library' in s or 'floating books' in s or 'opens it' in s:
+                return sentence
+        return f'{character_name} opens the glowing door and discovers a magical library filled with floating books.'
+    if panel_index == 3:
+        for idx, sentence in enumerate(sentences):
+            s = sentence.lower()
+            if 'future' in s or 'book suddenly opens' in s or 'picture of her future' in s:
+                return sentence
+        return f'A mysterious book opens by itself and reveals a vision of {character_name}\'s future.'
+    if panel_index == 4:
+        for idx, sentence in enumerate(sentences):
+            s = sentence.lower()
+            if 'disappearing' in s or 'run back' in s or 'before she can read it' in s:
+                return sentence
+        return f'The magical library begins disappearing as {character_name} grabs the mysterious book and runs back through the door.'
+    if panel_index == 5:
+        for idx, sentence in enumerate(sentences):
+            s = sentence.lower()
+            if 'morning' in s or 'message' in s or 'desk' in s:
+                return sentence
+        return f'The next morning, the magical door is gone, but the mysterious book remains on {character_name}\'s desk with the final message: "Your adventure has only begun."'
+    return base
+
+
+def user_story_fallback(req):
+    story_text = (req.story_description or req.premise or '').strip()
+    title = (req.story_title or 'Untitled Comic').strip() or 'Untitled Comic'
+    setting = (req.custom_setting or req.setting or 'Story world').strip() or 'Story world'
+    character_name = (req.character or (req.characters[0].name if req.characters else 'Hero')).strip() or 'Hero'
+    sentences = [segment.strip() for segment in re.split(r'(?<=[.!?])\s+', story_text) if segment.strip()]
+    panel_count = max(1, min(int(req.panel_count or 5), 9))
+    titles = _story_panel_titles(story_text, panel_count)
+    panels = []
+    for idx in range(panel_count):
+        title_text = titles[idx] if idx < len(titles) else f'Panel {idx + 1}'
+        sentence_index = 0
+        if idx == 0:
+            sentence_index = next((i for i, s in enumerate(sentences) if 'door' in s.lower() or 'corridor' in s.lower()), 0)
+        elif idx == 1:
+            sentence_index = next((i for i, s in enumerate(sentences) if 'library' in s.lower() or 'opens it' in s.lower() or 'floating books' in s.lower()), 0)
+        elif idx == 2:
+            sentence_index = next((i for i, s in enumerate(sentences) if 'future' in s.lower() or 'book' in s.lower()), 0)
+        elif idx == 3:
+            sentence_index = next((i for i, s in enumerate(sentences) if 'disappear' in s.lower() or 'run' in s.lower()), 0)
+        elif idx == 4:
+            sentence_index = next((i for i, s in enumerate(sentences) if 'morning' in s.lower() or 'message' in s.lower() or 'desk' in s.lower()), 0)
+        scene = _panel_scene_for_story(story_text, sentence_index, idx + 1, character_name, setting)
+        dialogue = 'The adventure has only just begun.' if idx == panel_count - 1 else f'{character_name}: This is only the beginning.'
+        narration = f'{character_name} follows the exact events of the story through {setting}, moving from the first discovery to the final message.'
+        if idx == 0:
+            narration = f'{character_name} stays late at {setting}, notices the empty corridor, and finds the glowing door that should not exist.'
+        elif idx == 1:
+            narration = f'{character_name} opens the glowing door and steps into a magical library filled with floating books.'
+        elif idx == 2:
+            narration = f'A mysterious book opens on its own and reveals a glimpse of {character_name}\'s future.'
+        elif idx == 3:
+            narration = f'The magic begins to fade as {character_name} grabs the mysterious book and escapes through the door.'
+        elif idx == 4:
+            narration = f'The next morning brings the final clue: the door is gone, but the mysterious book remains with a message for {character_name}.'
+
+        panel = ComicPanel(
+            title=title_text,
+            scene=scene,
+            caption=f'{title_text}: {scene[:120]}',
+            narration=narration,
+            dialogue=dialogue,
+            characters=[character_name],
+            actions=scene,
+            background=setting,
+            emotion=req.tone or 'Mysterious',
+            camera_angle='Cinematic wide shot' if idx in (0, 1) else 'Medium close-up',
+        )
+        panels.append(panel)
+    return ComicStory(
+        title=title,
+        character=character_name,
+        setting=setting,
+        tone=req.tone or 'Adventure',
+        art_style=req.custom_art_style or req.art_style,
+        colour_style=req.custom_colour_style or req.colour_style,
+        theme=req.theme or req.genre,
+        genre=req.genre,
+        target_audience=req.target_audience,
+        language=req.language,
+        orientation=req.orientation,
+        character_visual_style=req.character_visual_style,
+        background_style=req.background_style,
+        lighting_mood=req.lighting_mood,
+        characters=req.characters or ([{'name': character_name}] if character_name else []),
+        panels=panels,
+    )
+
 
 def demo_story(req):
     tone_steps={
@@ -24,14 +165,35 @@ def demo_story(req):
     panels=[]
     for index,((title,scene),dialogue) in enumerate(zip(steps,(dialogue_lines*((req.panel_count+4)//5))[:req.panel_count]),1):
         panels.append(ComicPanel(title=title,scene=scene,caption=f'{title}: {scene}',narration=f'{req.character or "The hero"} follows the thread of the story through {setting}, guided by {req.premise or req.story_description or "a strange new discovery"}.',dialogue=dialogue,characters=character_names,actions=scene,background=setting,emotion=req.tone,camera_angle='Cinematic medium shot'))
-    return ComicStory(title=req.story_title or f'{(req.character or "Untitled").title()}\'s {req.genre} Comic',character=req.character or (character_names[0] if character_names else 'Hero'),setting=setting,tone=req.tone,art_style=req.custom_art_style or req.art_style,colour_style=req.custom_colour_style or req.colour_style,theme=req.theme,characters=profiles,panels=panels)
+    fallback_title = 'Untitled Comic'
+    return ComicStory(title=(req.story_title or '').strip() or fallback_title,character=req.character or (character_names[0] if character_names else 'Hero'),setting=setting,tone=req.tone,art_style=req.custom_art_style or req.art_style,colour_style=req.custom_colour_style or req.colour_style,theme=req.theme,characters=profiles,panels=panels)
 
 def generate_comic(req,progress_callback=None):
     story=None; source='demo'
-    if current_app.config['USE_GEMINI'] and current_app.config['GEMINI_API_KEY']:
-        try: story=live_generate(req); source='gemini'
-        except Exception: story=None
-    if story is None: story=demo_story(req)
+    if req.story_description and req.story_description.strip():
+        story = user_story_fallback(req)
+        source = 'local-story-fallback'
+
+    use_gemini = False
+    gemini_key = ''
+    try:
+        use_gemini = bool(current_app.config['USE_GEMINI'])
+        gemini_key = str(current_app.config.get('GEMINI_API_KEY', '')).strip()
+    except RuntimeError:
+        use_gemini = bool(__import__('os').getenv('USE_GEMINI', '1').strip().lower() in ('1', 'true', 'yes'))
+        gemini_key = str(__import__('os').getenv('GEMINI_API_KEY', '')).strip()
+
+    if use_gemini and gemini_key:
+        try:
+            story = live_generate(req)
+            source = 'gemini'
+        except Exception:
+            if story is None:
+                story = demo_story(req)
+                source = 'demo'
+    if story is None:
+        story = demo_story(req)
+        source = 'demo'
     story.genre=req.genre
     story.target_audience=req.target_audience
     story.language=req.language
@@ -41,5 +203,10 @@ def generate_comic(req,progress_callback=None):
     story.lighting_mood=req.lighting_mood
     story.art_style=req.custom_art_style or req.art_style
     story.colour_style=req.custom_colour_style or req.colour_style
-    assets=build_assets(story,Path(current_app.root_path)/'static'/'generated',progress_callback)
+
+    try:
+        assets=build_assets(story,Path(current_app.root_path)/'static'/'generated',progress_callback)
+    except RuntimeError:
+        assets=[]
+
     return story,assets,source

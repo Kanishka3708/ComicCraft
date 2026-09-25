@@ -4,7 +4,48 @@ from pathlib import Path
 from PIL import Image
 from app import create_app
 from app.models import GenerateRequest
-from app.services.comic_service import demo_story
+from app.services.comic_service import demo_story, generate_comic
+def test_blank_story_title_does_not_fallback_to_character_name():
+    story = demo_story(GenerateRequest(character='Asha', story_title=''))
+    assert story.title == 'Untitled Comic'
+
+def test_custom_story_is_used_instead_of_demo_story():
+    custom_story = (
+        'One evening, Kani stays late at college to finish her project. '
+        'While walking through an empty corridor, she discovers a glowing door that has never been there before. '
+        'She opens it and finds a magical library filled with floating books. '
+        'One book suddenly opens by itself and shows a picture of her future. '
+        'Before she can read it, the library begins disappearing. '
+        'Kani grabs the mysterious book and runs back through the door. '
+        'The next morning, the door is gone—but the magical book is still on her desk, with one message written inside: "Your adventure has only begun."'
+    )
+    req = GenerateRequest(
+        story_title='The Mysterious Door',
+        story_description=custom_story,
+        genre='Fantasy',
+        panel_count=5,
+        character='Kani',
+        setting='College',
+        tone='Mysterious and adventurous',
+        art_style='Anime',
+        theme='Mystery',
+        target_audience='Young adult',
+        language='English',
+        orientation='Portrait',
+    )
+    story, _, _ = generate_comic(req)
+    assert story.title == 'The Mysterious Door'
+    assert any('glowing door' in panel.scene.lower() for panel in story.panels)
+    assert 'the map in the margins' not in ' '.join(panel.title.lower() for panel in story.panels)
+    assert 'door' in story.panels[0].scene.lower()
+
+
+def test_create_page_starts_with_blank_story_title():
+    client = create_app().test_client()
+    response = client.get('/create/new')
+    assert response.status_code == 200
+    assert 'id="storyTitle" value=""' in response.get_data(as_text=True)
+
 def test_demo(): assert len(demo_story(GenerateRequest()).panels)==5
 def test_health():
  c=create_app().test_client(); r=c.get('/health'); assert r.status_code==200 and r.get_json()['status']=='ok'

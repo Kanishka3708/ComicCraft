@@ -1,8 +1,18 @@
 const get = (id) => document.getElementById(id);
 const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (character) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[character]));
+const SAMPLE_TITLE = 'The Map Beneath the City';
 let currentComic = null;
 let characterCount = 0;
 let activeStep = 1;
+
+function resetSampleValues() {
+  const titleField = get('storyTitle');
+  if (titleField && (titleField.value === SAMPLE_TITLE || titleField.value.trim() === '')) {
+    titleField.value = '';
+  }
+}
+
+document.addEventListener('DOMContentLoaded', resetSampleValues);
 
 function characterTemplate(index) {
   return `<article class="character-card" data-character="${index}"><div class="character-card-head"><b>Character ${index}</b><button type="button" class="remove-character">Remove</button></div><div class="character-grid"><label>Name<input class="character-name" required placeholder="Character name"></label><label>Age<input class="character-age" placeholder="Age"></label><label>Gender<input class="character-gender" placeholder="Gender"></label><label>Hair<input class="character-hair" placeholder="Hair style and color"></label><label class="wide">Appearance<textarea class="character-appearance" rows="2" placeholder="Face, build, distinguishing features"></textarea></label><label>Clothing<input class="character-clothing" placeholder="What they wear"></label><label>Personality<input class="character-personality" placeholder="Traits and mannerisms"></label><label>Character role<input class="character-role" placeholder="Hero, rival, guide..."></label></div></article>`;
@@ -109,12 +119,33 @@ async function requestComicStream(payload) {
 async function generateComic(event) {
   event.preventDefault();
   const formError = get('formError');
+  const titleInput = get('storyTitle');
+  const descriptionInput = get('storyDescription');
   formError.hidden = true;
+  titleInput.setCustomValidity('');
+  descriptionInput.setCustomValidity('');
+
+  if (!titleInput.value.trim()) {
+    titleInput.setCustomValidity('Story title is required.');
+    titleInput.reportValidity();
+    formError.textContent = 'Story title is required before generating your comic.';
+    formError.hidden = false;
+    return;
+  }
+
+  if (!descriptionInput.value.trim()) {
+    descriptionInput.setCustomValidity('Story description is required.');
+    descriptionInput.reportValidity();
+    formError.textContent = 'Story description is required before generating your comic.';
+    formError.hidden = false;
+    return;
+  }
+
   const characters = collectCharacters();
   const panelMode = document.querySelector('input[name="panelMode"]:checked').value;
   const manualPanels = panelMode === 'manual' ? collectManualPanels() : [];
-  if (!get('storyTitle').value.trim() || !get('storyDescription').value.trim() || !characters.length || !characters[0].name) {
-    formError.textContent = 'Comic title, story / plot, and at least one character name are required.';
+  if (!characters.length || !characters[0].name) {
+    formError.textContent = 'At least one character name is required.';
     formError.hidden = false;
     return;
   }

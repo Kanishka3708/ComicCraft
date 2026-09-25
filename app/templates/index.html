@@ -1,34 +1,30 @@
-COMICCRAFT
-Studio   Features   My comics
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ComicCraft | AI Comic Studio</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body class="landing-page">
+  <div class="ambient ambient-one"></div>
+  <div class="ambient ambient-two"></div>
 
-AI COMIC STUDIO / 01
+  <header class="site-nav landing-nav">
+    <a class="brand" href="/" aria-label="ComicCraft home">
+      <span class="brand-mark">✦</span>
+      <span>COMIC<span>CRAFT</span></span>
+    </a>
+  </header>
 
-Turn your
-imagination
-into comics.
+  <main class="landing-hero">
+    <span class="eyebrow">AI COMIC STUDIO</span>
+    <h1>Turn ideas into unforgettable comics.</h1>
+    <p>Build stories, characters, and scenes in one clean creation flow.</p>
 
-Create stories...
-
-[✦ Create your comic] [Explore features ↓]
-
-✦ Built for bold ideas...
-
-          WOW!
-             ZAP!
-       THE UNKNOWN
-       COMICCRAFT 01/05
-       Every story starts somewhere
-       A NEW BEGINNING
-
-
-WORKSPACE
-
-Make something unforgettable.
-
-       COMIC SETUP              AI TOOLKIT
-       Story title              Generate story
-       Genre                    Generate character
-       Story description        Generate scene
-       ...                      Improve dialogue
-
-       ✦ Generate my comic
+    <div class="hero-actions single-action">
+      <a class="primary-btn" href="/create/new">Create your comic <span>→</span></a>
+    </div>
+  </main>
+</body>
+</html>
