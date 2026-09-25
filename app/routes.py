@@ -11,7 +11,7 @@ from pydantic import ValidationError
 from .models import GenerateRequest,ComicStory
 from .services.comic_service import generate_comic
 from .exporters import export_pdf
-from .image_generator import generate_panel_image,generate_test_image,build_image_prompt,ImageGenerationError
+from .image_generator import generate_panel_image,generate_test_image,make_default_panel_image,build_image_prompt,ImageGenerationError
 main_bp=Blueprint('main',__name__)
 @main_bp.get('/')
 def index(): return render_template('index.html')
@@ -24,7 +24,9 @@ def health(): return jsonify(status='ok',service='ComicCraft',mode='demo' if cur
 @main_bp.post('/api/generate')
 def generate():
     try:
-        req=GenerateRequest.model_validate(request.get_json(silent=True) or {})
+        payload=request.get_json(silent=True) or {}
+        req=GenerateRequest.model_validate(payload)
+        current_app.logger.info('RECEIVED COMIC SETTINGS: genre=%s | visual_style=%s | color=%s | orientation=%s | character_visual=%s | background=%s | lighting=%s', req.genre, req.art_style, req.colour_style, req.orientation, req.character_visual_style, req.background_style, req.lighting_mood)
         story,assets,source=generate_comic(req); data=story.model_dump(); data.update(assets=assets,source=source); return jsonify(data)
     except ValidationError as e: return jsonify(error='Invalid input',details=str(e)),400
     except ImageGenerationError as e: return jsonify(error=str(e),stage='image_generation',provider=e.provider),502
@@ -36,6 +38,7 @@ def generate_stream():
         req=GenerateRequest.model_validate(request.get_json(silent=True) or {})
     except ValidationError as e:
         return jsonify(error='Invalid input',details=str(e)),400
+    current_app.logger.info('RECEIVED COMIC SETTINGS: genre=%s | visual_style=%s | color=%s | orientation=%s | character_visual=%s | background=%s | lighting=%s', req.genre, req.art_style, req.colour_style, req.orientation, req.character_visual_style, req.background_style, req.lighting_mood)
     events=queue.Queue()
     app=current_app._get_current_object()
 
@@ -85,14 +88,19 @@ def regenerate_panel():
         data=request.get_json(silent=True) or {}; story=ComicStory.model_validate(data.get('story',data)); index=int(data.get('panel_index',0));
         if index<0 or index>=len(story.panels): return jsonify(error='Invalid panel index'),400
         panel=story.panels[index]; prompt=str(data.get('prompt') or build_image_prompt(story,panel)); out=Path(current_app.root_path)/'static'/'generated'/f'comic_{uuid4().hex}_panel_{index+1}.png'
-        if not current_app.config['USE_GEMINI'] or not current_app.config['IMAGE_API_KEY']:
-            return jsonify(success=False,error='Image generation is not configured. Please add the required image-generation API key.',stage='image_generation'),503
-        generate_panel_image(story,panel,out,prompt)
-        panel.image_status='generated'
-        panel.image_prompt=prompt; panel.image_error=''
+        try:
+            if not current_app.config['USE_GEMINI'] or not current_app.config['IMAGE_API_KEY']:
+                raise ImageGenerationError('Image generation is not configured.', 'Google Gemini')
+            generate_panel_image(story,panel,out,prompt)
+            panel.image_status='generated'; panel.image_error=''
+        except ImageGenerationError as error:
+            current_app.logger.warning('[IMAGE] AI generation failed for panel %s: %s',index+1,error)
+            make_default_panel_image(story,panel,out,index+1)
+            panel.image_status='fallback'; panel.image_error='AI image unavailable - using default comic image.'
+            current_app.logger.info('[IMAGE] Using local fallback image for panel %s',index+1)
+        current_app.logger.info('[IMAGE] Panel %s image resolved: %s',index+1,out)
+        panel.image_prompt=prompt
         return jsonify(success=True,asset=f'/static/generated/{out.name}',panel=panel.model_dump())
-    except ImageGenerationError as e:
-        return jsonify(success=False,error=str(e),stage='image_generation',provider=e.provider),502
     except Exception as e: return jsonify(error='Image generation failed. Try again.',details=str(e)),500
 
 @main_bp.post('/api/test-image-generation')

@@ -7,7 +7,7 @@ import requests
 from flask import current_app
 from google import genai
 from google.genai import types
-from PIL import Image
+from PIL import Image,ImageDraw,ImageFont
 
 
 class ImageGenerationError(RuntimeError):
@@ -54,7 +54,11 @@ def _provider_error(provider, error, status=None, response_text=''):
         provider, status or 'n/a', raw_error, safe_response or 'n/a',
     )
     error_text = f'{raw_error} {response_text}'
-    rate_limited = status == 429 or any(term in error_text.lower() for term in ('resource_exhausted', 'rate limit', 'rate_limit', 'quota'))
+    normalized_error = error_text.lower()
+    rate_limited = status == 429 or any(term in normalized_error for term in ('resource_exhausted', 'rate limit', 'rate_limit', 'quota'))
+    quota_exhausted = 'perday' in normalized_error or 'quota is exhausted' in normalized_error
+    if quota_exhausted:
+        return ImageGenerationError('Image generation quota is currently unavailable. Please try again later or configure an image-generation API with available quota.', provider, status or 429)
     if rate_limited:
         return ImageRateLimitError(message, provider, status or 429, _retry_delay_from_error(error_text))
     return ImageGenerationError(message, provider, status)
@@ -69,6 +73,31 @@ def validate_generated_image(path):
             image.verify()
     except Exception as error:
         raise ImageGenerationError('The image provider returned an invalid image.', 'Google Gemini') from error
+
+
+def make_default_panel_image(story,panel,out,panel_number):
+    palettes=[((20,34,66),(255,191,92),(90,198,190)),((54,28,72),(255,211,96),(239,126,145)),((25,42,60),(157,144,255),(83,181,204)),((28,68,57),(245,198,86),(117,195,157)),((65,38,30),(228,125,67),(234,183,91))]
+    background,accent,secondary=palettes[(panel_number-1)%len(palettes)]
+    image=Image.new('RGB',(1200,800),background)
+    draw=ImageDraw.Draw(image)
+    title_font=ImageFont.load_default(size=34)
+    body_font=ImageFont.load_default(size=20)
+    draw.rounded_rectangle((28,28,1172,772),radius=26,fill=background,outline=accent,width=10)
+    draw.rectangle((70,175,1130,580),fill=secondary,outline=accent,width=8)
+    horizon=380+(panel_number%3)*28
+    draw.rectangle((70,horizon,1130,580),fill=accent)
+    draw.polygon([(110,380),(330,245),(530,380)],fill=background)
+    draw.polygon([(690,380),(900,210),(1120,380)],fill=background)
+    draw.ellipse((470,230,730,490),fill=secondary,outline=background,width=8)
+    draw.ellipse((535,310,565,340),fill=background)
+    draw.ellipse((635,310,665,340),fill=background)
+    draw.arc((535,340,665,430),0,180,fill=background,width=8)
+    draw.polygon([(400,700),(600,455),(800,700)],fill=accent,outline=background)
+    draw.line((120,610,1080,610),fill=accent,width=8)
+    draw.text((78,78),f'PANEL {panel_number}',font=title_font,fill=accent)
+    draw.text((78,650),panel.title[:70],font=body_font,fill=secondary)
+    image.save(out,format='PNG')
+    validate_generated_image(out)
 
 
 def _write_provider_response(response, out, provider):
@@ -154,14 +183,19 @@ def build_image_prompt(story, panel):
     character_profiles = '; '.join(profile.prompt_description() for profile in story.characters)
     if not character_profiles:
         character_profiles = story.character
-    return f'''Create an actual finished comic-book illustration for panel "{panel.title}".
+    prompt = f'''Create an actual finished comic-book illustration for panel "{panel.title}".
 Story context: {story.title}. Theme and mood: {story.theme or story.tone}. Setting: {story.setting}.
+Genre: {story.genre}. Target audience: {story.target_audience}. Language: {story.language}.
 Scene: {panel.scene}. Characters present: {', '.join(panel.characters)}.
 Character appearance and fixed identity: {character_profiles}.
 Action: {panel.actions}. Facial expression and emotion: {panel.emotion or story.tone}.
 Environment and background: {panel.background or story.setting}. Camera angle: {panel.camera_angle or 'cinematic composition'}.
-Visual style: {story.art_style}. Color mode: {story.colour_style}.
-Create a complete illustrated panel with clear foreground, background, expressive poses, and consistent characters. Do not return text, SVG, HTML, JSON, captions, speech bubbles, watermarks, logos, placeholder graphics, or an empty image. Return actual generated image data only.'''
+Visual style: {story.art_style}. Color mode: {story.colour_style}. Page orientation: {story.orientation}.
+Character visual style: {story.character_visual_style}. Background style: {story.background_style}. Lighting and mood: {story.lighting_mood}.
+Create a complete illustrated panel with clear foreground, background, expressive poses, and consistent characters. Apply all settings above consistently to every panel. Do not return text, SVG, HTML, JSON, captions, speech bubbles, watermarks, logos, placeholder graphics, or an empty image. Return actual generated image data only.'''
+    current_app.logger.info('FINAL IMAGE PROMPT SETTINGS: genre=%s | visual_style=%s | color=%s | orientation=%s | character_visual=%s | background=%s | lighting=%s', story.genre, story.art_style, story.colour_style, story.orientation, story.character_visual_style, story.background_style, story.lighting_mood)
+    current_app.logger.debug('FINAL IMAGE PROMPT: %s', prompt)
+    return prompt
 
 
 def generate_panel_image(story, panel, out, prompt=None, progress_callback=None):

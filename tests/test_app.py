@@ -9,13 +9,13 @@ def test_demo(): assert len(demo_story(GenerateRequest()).panels)==5
 def test_health():
  c=create_app().test_client(); r=c.get('/health'); assert r.status_code==200 and r.get_json()['status']=='ok'
 def test_generate():
- c=create_app().test_client(); r=c.post('/api/generate',json={'character':'Asha'}); assert r.status_code==502 and 'Image generation is not configured' in r.get_json()['error']
+ c=create_app().test_client(); r=c.post('/api/generate',json={'character':'Asha'}); data=r.get_json(); assert r.status_code==200 and len(data['assets'])==5 and all(panel['image_status']=='fallback' for panel in data['panels'])
 def test_pdf():
- c=create_app().test_client(); s=demo_story(GenerateRequest()).model_dump(); r=c.post('/api/export-pdf',json=s); assert r.status_code==400 and b'image is missing' in r.data
+ c=create_app().test_client(); generated=c.post('/api/generate',json={'character':'Asha'}).get_json(); r=c.post('/api/export-pdf',json=generated); assert r.status_code==200 and r.data[:4]==b'%PDF'
 def test_pdf_with_missing_asset():
  c=create_app().test_client(); s=demo_story(GenerateRequest()).model_dump(); s['assets']=[None]+[None]*(len(s['panels'])-1); r=c.post('/api/export-pdf',json=s); assert r.status_code==400 and b'image is missing' in r.data
 def test_demo_panel_regenerate():
- c=create_app().test_client(); story=demo_story(GenerateRequest()).model_dump(); r=c.post('/api/panel/regenerate',json={'story':story,'panel_index':0,'prompt':'retry'}); assert r.status_code==503 and 'Image generation is not configured' in r.get_json()['error']
+ c=create_app().test_client(); story=demo_story(GenerateRequest()).model_dump(); r=c.post('/api/panel/regenerate',json={'story':story,'panel_index':0,'prompt':'retry'}); assert r.status_code==200 and r.get_json()['panel']['image_status']=='fallback'
 
 def test_five_generated_images(monkeypatch, tmp_path):
  from app import layout_builder
@@ -55,3 +55,22 @@ def test_generation_stream_reports_all_panels(monkeypatch):
   response=client.post('/api/generate-stream',json={'character':'Asha','panel_count':5})
  body=response.get_data(as_text=True)
  assert response.status_code==200 and all(f'"panel": {number}' in body for number in range(1,6)) and '"type": "complete"' in body
+
+def test_selected_settings_reach_every_panel_prompt(monkeypatch,caplog):
+ from app import image_generator,services
+ from app.services import comic_service
+ req=GenerateRequest(story_title='Settings test',story_description='A mystery',genre='Mystery',panel_count=5,character='Asha',art_style='Manga',colour_style='Black and White',orientation='Portrait',character_visual_style='Ink character sheets',background_style='Detailed library',lighting_mood='Moonlit suspense',target_audience='Young adult',language='English')
+ monkeypatch.setattr(comic_service,'build_assets',lambda story,outdir,progress_callback=None: [])
+ app=create_app()
+ with app.app_context(),caplog.at_level('INFO'):
+  story,_,_=comic_service.generate_comic(req)
+  prompts=[image_generator.build_image_prompt(story,panel) for panel in story.panels]
+ assert all(value in prompt for prompt in prompts for value in ('Mystery','Manga','Black and White','Portrait','Ink character sheets','Detailed library','Moonlit suspense'))
+ assert 'FINAL IMAGE PROMPT SETTINGS' in caplog.text
+
+def test_stream_logs_received_settings(caplog):
+ app=create_app()
+ payload={'genre':'Mystery','art_style':'Manga','colour_style':'Black and White','orientation':'Portrait','character_visual_style':'Ink character sheets','background_style':'Detailed library','lighting_mood':'Moonlit suspense','character':'Asha','panel_count':1}
+ with app.test_client() as client,caplog.at_level('INFO'):
+  client.post('/api/generate-stream',json=payload)
+ assert 'RECEIVED COMIC SETTINGS' in caplog.text and 'Manga' in caplog.text and 'Moonlit suspense' in caplog.text

@@ -58,7 +58,7 @@ function renderComic(data) {
   currentComic = data;
   get('resultTitle').textContent = data.title;
   get('resultMeta').textContent = `${data.panels.length} panels | ${data.art_style} | ${data.colour_style}`;
-  get('resultPanels').innerHTML = data.panels.map((panel, index) => `<article class="result-panel">${data.assets?.[index] ? `<img src="${escapeHtml(data.assets[index])}" alt="${escapeHtml(panel.title)}">` : '<div class="loading">Image generation failed for this panel.</div>'}<div class="result-panel-body"><h3>Panel ${index + 1}: ${escapeHtml(panel.title)}</h3><p>${escapeHtml(panel.narration)}</p><p><b>${escapeHtml(data.character)}:</b> ${escapeHtml(panel.dialogue)}</p></div></article>`).join('');
+  get('resultPanels').innerHTML = data.panels.map((panel, index) => `<article class="result-panel">${data.assets?.[index] ? `<img src="${escapeHtml(data.assets[index])}" alt="${escapeHtml(panel.title)}">` : '<div class="loading">Image generation failed for this panel.</div>'}<div class="result-panel-body"><h3>Panel ${index + 1}: ${escapeHtml(panel.title)}</h3>${panel.image_status === 'fallback' ? '<small class="fallback-status">AI image unavailable - using default comic image</small>' : ''}<p>${escapeHtml(panel.narration)}</p><p><b>${escapeHtml(data.character)}:</b> ${escapeHtml(panel.dialogue)}</p></div></article>`).join('');
   get('result').hidden = false;
   get('result').scrollIntoView({behavior: 'smooth'});
 }

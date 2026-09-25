@@ -39,6 +39,13 @@ class ComicStory(BaseModel):
     art_style:str=Field(min_length=1,max_length=160)
     colour_style:str='Full Color'
     theme:str=''
+    genre:str='Adventure'
+    target_audience:str='General audience'
+    language:str='English'
+    orientation:str='Portrait'
+    character_visual_style:str='Consistent cinematic character design'
+    background_style:str='Detailed environment'
+    lighting_mood:str='Cinematic'
     characters:List[CharacterProfile]=Field(default_factory=list)
     panels:List[ComicPanel]=Field(min_length=1,max_length=9)
     @field_validator('panels')

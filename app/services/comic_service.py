@@ -32,5 +32,14 @@ def generate_comic(req,progress_callback=None):
         try: story=live_generate(req); source='gemini'
         except Exception: story=None
     if story is None: story=demo_story(req)
+    story.genre=req.genre
+    story.target_audience=req.target_audience
+    story.language=req.language
+    story.orientation=req.orientation
+    story.character_visual_style=req.character_visual_style
+    story.background_style=req.background_style
+    story.lighting_mood=req.lighting_mood
+    story.art_style=req.custom_art_style or req.art_style
+    story.colour_style=req.custom_colour_style or req.colour_style
     assets=build_assets(story,Path(current_app.root_path)/'static'/'generated',progress_callback)
     return story,assets,source
